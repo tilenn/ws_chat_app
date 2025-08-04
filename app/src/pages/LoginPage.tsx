@@ -1,20 +1,20 @@
 import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 const API_URL = "http://localhost:3000/api/auth";
 
-const AuthPage: React.FC = () => {
-  const [isLogin, setIsLogin] = useState(true);
+const LoginPage: React.FC = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage("");
-    const endpoint = isLogin ? "/login" : "/register";
 
     try {
-      const response = await fetch(`${API_URL}${endpoint}`, {
+      const response = await fetch(`${API_URL}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
@@ -25,26 +25,19 @@ const AuthPage: React.FC = () => {
         throw new Error(data.message || "Something went wrong");
       }
 
-      if (isLogin) {
-        setMessage("Login successful!");
-        // TODO: Save the token and redirect
-        console.log("Token:", data.token);
-      } else {
-        setMessage("Registration successful! Please log in.");
-        setIsLogin(true);
-      }
+      // Store the token to be used by the chat client
+      localStorage.setItem("token", data.token);
+      setMessage("Login successful!");
+      navigate("/chat"); // Redirect to the main chat page
     } catch (error: any) {
       setMessage(error.message);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      {/* This div is the white form box, centered by the classes above. */}
+    <div className="flex justify-center items-center min-h-screen bg-gray-100">
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold text-center text-gray-900">
-          {isLogin ? "Login" : "Register"}
-        </h2>
+        <h2 className="text-2xl font-bold text-center text-gray-900">Login</h2>
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div>
             <label
@@ -82,20 +75,22 @@ const AuthPage: React.FC = () => {
             type="submit"
             className="w-full px-4 py-2 font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
-            {isLogin ? "Login" : "Register"}
+            Login
           </button>
           {message && <p className="text-center text-red-500">{message}</p>}
         </form>
-        <button
-          type="button"
-          onClick={() => setIsLogin(!isLogin)}
-          className="w-full text-sm text-center text-indigo-600 hover:text-indigo-500"
-        >
-          {isLogin ? "Need an account? Register" : "Have an account? Login"}
-        </button>
+        <p className="text-sm text-center">
+          Need an account?{" "}
+          <Link
+            to="/register"
+            className="font-medium text-indigo-600 hover:text-indigo-500"
+          >
+            Register
+          </Link>
+        </p>
       </div>
     </div>
   );
 };
 
-export default AuthPage;
+export default LoginPage;

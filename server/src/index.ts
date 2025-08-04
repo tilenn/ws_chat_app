@@ -1,32 +1,38 @@
 import express from "express";
 import { createServer } from "http";
-import { Server } from "socket.io";
+import { Server, Socket } from "socket.io";
 import authRouter from "./auth.router";
-import cors from "cors"; // 1. Import the cors middleware
+import cors from "cors";
+import jwt from "jsonwebtoken";
+
+interface DecodedToken {
+  userId: string;
+  username: string;
+}
+
+interface SocketWithAuth extends Socket {
+  decoded_token?: DecodedToken;
+}
 
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:5173", // 2. Make socket.io CORS more specific
+    origin: "http://localhost:5173",
     methods: ["GET", "POST"],
   },
 });
 
-// 3. Use the cors middleware for all incoming Express requests
-// This will allow requests from your React app.
-// It's crucial to place this before your routes.
 app.use(
   cors({
     origin: "http://localhost:5173",
   })
 );
 
-// This middleware is for parsing JSON bodies
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
-const GENERAL_ROOM = "general";
+const GENERAL_ROOM = "general"; // The only room we are using for now
 
 app.get("/", (req, res) => {
   res.send("Server is up and running!");
@@ -34,21 +40,50 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRouter);
 
-io.on("connection", (socket) => {
-  console.log(`User connected: ${socket.id}`);
+io.use((socket: SocketWithAuth, next) => {
+  const token = socket.handshake.auth.token;
 
-  // 1. Automatically join the user to the "general" room
+  if (!token) {
+    return next(new Error("Authentication error: No token provided"));
+  }
+
+  try {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || "your_default_secret"
+    ) as DecodedToken;
+    socket.decoded_token = decoded;
+    next();
+  } catch (err) {
+    return next(new Error("Authentication error: Invalid token"));
+  }
+});
+
+io.on("connection", (socket: SocketWithAuth) => {
+  console.log(
+    `Authenticated user connected: ${socket.decoded_token?.username} (${socket.id})`
+  );
+
+  // Automatically join the user to the "general" room
   socket.join(GENERAL_ROOM);
-  console.log(`User ${socket.id} joined room: ${GENERAL_ROOM}`);
+  console.log(
+    `User ${socket.decoded_token?.username} joined room: ${GENERAL_ROOM}`
+  );
 
-  // 2. Listen for a message from this user
+  // Listen for a message from this user
   socket.on("chat_message", (msg) => {
-    // 3. Broadcast the message to everyone in the "general" room
-    io.to(GENERAL_ROOM).emit("chat_message", msg);
+    const username = socket.decoded_token?.username || "Anonymous";
+    const messageWithAuthor = {
+      author: username,
+      content: msg,
+    };
+
+    // Broadcast directly to the only room we have
+    io.to(GENERAL_ROOM).emit("chat_message", messageWithAuthor);
   });
 
   socket.on("disconnect", () => {
-    console.log(`User disconnected: ${socket.id}`);
+    console.log(`User ${socket.decoded_token?.username} disconnected`);
   });
 });
 
