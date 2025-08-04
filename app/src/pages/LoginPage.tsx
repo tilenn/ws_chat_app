@@ -29,13 +29,25 @@ const LoginPage: React.FC = () => {
       localStorage.setItem("token", data.token);
       setMessage("Login successful!");
       navigate("/chat"); // Redirect to the main chat page
-    } catch (error: any) {
-      setMessage(error.message);
+    } catch (error) {
+      if (error instanceof Error) {
+        setMessage(error.message);
+      } else {
+        setMessage("An unknown error occurred");
+      }
     }
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
+    <div className="flex flex-col justify-center items-center min-h-screen bg-gray-100">
+      <div className="text-center mb-8">
+        <h1 className="text-5xl font-bold text-gray-900">
+          Welcome to ChatRooms
+        </h1>
+        <p className="mt-2 text-lg text-gray-600">
+          Chat with your friends and colleagues.
+        </p>
+      </div>
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
         <h2 className="text-2xl font-bold text-center text-gray-900">Login</h2>
         <form className="space-y-6" onSubmit={handleSubmit}>
