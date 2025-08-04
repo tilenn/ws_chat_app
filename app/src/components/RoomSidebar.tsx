@@ -6,8 +6,8 @@ interface RoomSidebarProps {
 
 // Hardcoded list of rooms for now, as seen in the design
 const CHAT_ROOMS = [
-  { id: "ux-ui", name: "UX & UI Team" },
   { id: "general", name: "General" },
+  { id: "ux-ui", name: "UX & UI Team" },
   { id: "thread-social", name: "Thread - Social Media..." },
   { id: "meme", name: "Meme" },
   { id: "awokwokwk", name: "Awokwokwk" },
