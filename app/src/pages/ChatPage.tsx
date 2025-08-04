@@ -1,15 +1,23 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
+import { jwtDecode } from "jwt-decode";
+import UserList from "../components/UserList";
+import MessageBubble from "../components/MessageBubble";
 
 interface Message {
   author: string;
   content: string;
 }
 
+interface DecodedToken {
+  username: string;
+}
+
 const ChatPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
+  const [currentUser, setCurrentUser] = useState<DecodedToken | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const navigate = useNavigate();
 
@@ -19,33 +27,20 @@ const ChatPage: React.FC = () => {
       navigate("/login");
       return;
     }
+    const decoded = jwtDecode<DecodedToken>(token);
+    setCurrentUser(decoded);
 
-    // Connect to the server with the token
-    const socket = io("http://localhost:3000", {
-      auth: {
-        token,
-      },
-    });
+    const socket = io("http://localhost:3000", { auth: { token } });
     socketRef.current = socket;
 
-    // --- Socket Event Handlers ---
-    socket.on("connect", () => {
-      console.log("Connected to chat server!");
-    });
-
+    socket.on("connect", () => console.log("Connected to chat server!"));
     socket.on("chat_message", (message: Message) => {
       setMessages((prevMessages) => [...prevMessages, message]);
     });
-
     socket.on("connect_error", (err) => {
-      console.error("Connection error:", err.message);
-      // If auth fails, token is likely invalid, so log out
-      if (err.message.includes("Authentication error")) {
-        handleLogout();
-      }
+      if (err.message.includes("Authentication error")) handleLogout();
     });
 
-    // Cleanup on component unmount
     return () => {
       socket.disconnect();
     };
@@ -65,47 +60,58 @@ const ChatPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100">
-      <header className="flex items-center justify-between p-4 bg-white shadow-md">
-        <h1 className="text-2xl font-bold text-gray-800">General Chat</h1>
-        <button
-          onClick={handleLogout}
-          className="px-4 py-2 font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
-        >
-          Logout
-        </button>
-      </header>
+    <div className="flex h-screen bg-gray-100">
+      {/* Sidebar */}
+      <aside className="w-80">
+        <UserList />
+      </aside>
 
-      <main className="flex-1 p-4 overflow-y-auto">
-        <div className="space-y-4">
-          {messages.map((msg, index) => (
-            <div key={index} className="flex">
-              <div className="p-3 rounded-lg bg-white shadow max-w-lg">
-                <p className="font-bold text-indigo-600">{msg.author}</p>
-                <p className="text-gray-800">{msg.content}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </main>
-
-      <footer className="p-4 bg-white border-t">
-        <form onSubmit={handleSendMessage} className="flex">
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Type your message..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
+      {/* Main Chat Area */}
+      <div className="flex flex-col flex-1">
+        <header className="flex items-center justify-between p-4 bg-white shadow-md">
+          <h1 className="text-2xl font-bold text-gray-800">
+            The Justice League
+          </h1>
           <button
-            type="submit"
-            className="px-6 py-2 font-semibold text-white bg-indigo-600 rounded-r-md hover:bg-indigo-700"
+            onClick={handleLogout}
+            className="px-4 py-2 font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
           >
-            Send
+            Logout
           </button>
-        </form>
-      </footer>
+        </header>
+
+        {/* Message List */}
+        <main className="flex-1 p-6 overflow-y-auto">
+          <div className="space-y-6">
+            {messages.map((msg, index) => (
+              <MessageBubble
+                key={index}
+                message={msg}
+                isOwnMessage={msg.author === currentUser?.username}
+              />
+            ))}
+          </div>
+        </main>
+
+        {/* Message Input */}
+        <footer className="p-4 bg-white border-t border-gray-200">
+          <form onSubmit={handleSendMessage} className="flex items-center">
+            <input
+              type="text"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder="Type your message..."
+              className="flex-1 px-4 py-3 bg-gray-100 border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <button
+              type="submit"
+              className="ml-4 px-6 py-3 font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              Send
+            </button>
+          </form>
+        </footer>
+      </div>
     </div>
   );
 };
