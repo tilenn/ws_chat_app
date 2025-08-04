@@ -3,6 +3,7 @@ import { createServer } from "http";
 import { Server, Socket } from "socket.io";
 import authRouter from "./auth.router";
 import roomRouter from "./room.router"; // 1. Import the new room router
+import userRouter from "./user.router"; // 1. Import the new user router
 import cors from "cors";
 import jwt from "jsonwebtoken";
 import prisma from "./db";
@@ -48,6 +49,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRouter);
 app.use("/api/rooms", roomRouter); // 2. Use the room router for this path
+app.use("/api/users", userRouter); // 2. Use the user router
 
 io.use((socket: SocketWithAuth, next) => {
   const token = socket.handshake.auth.token;
@@ -76,6 +78,8 @@ io.on("connection", (socket: SocketWithAuth) => {
   // Add user to online list
   if (socket.decoded_token) {
     onlineUsers.set(socket.id, socket.decoded_token.username);
+    // 1. Broadcast the updated user list to EVERYONE.
+    io.emit("update_user_list", getOnlineUserList());
   }
 
   // 1. Listen for a request to join a specific room
@@ -149,7 +153,7 @@ io.on("connection", (socket: SocketWithAuth) => {
   socket.on("disconnect", () => {
     if (socket.decoded_token) {
       onlineUsers.delete(socket.id);
-      // Broadcast the updated user list to all connected clients
+      // This already correctly broadcasts to everyone.
       io.emit("update_user_list", getOnlineUserList());
       console.log(`User ${socket.decoded_token.username} disconnected`);
     }

@@ -24,6 +24,11 @@ interface Room {
   name: string;
 }
 
+interface User {
+  id: string;
+  username: string;
+}
+
 const ChatPage: React.FC = () => {
   // Restore state for messages and the input
   const [messages, setMessages] = useState<Message[]>([]);
@@ -31,12 +36,13 @@ const ChatPage: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<DecodedToken | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]); // Add rooms state
   const [activeRoom, setActiveRoom] = useState<Room | null>(null); // Add activeRoom state
-  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]); // State for ALL users
+  const [onlineUsers, setOnlineUsers] = useState<string[]>([]); // State for ONLINE usernames
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null); // Ref for auto-scrolling
   const navigate = useNavigate();
 
-  // Effect to fetch initial data
+  // Effect to fetch initial data (rooms and all users)
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -57,26 +63,35 @@ const ChatPage: React.FC = () => {
         console.error("Failed to fetch rooms:", err);
       }
     };
+
+    // Fetch all users
+    const getAllUsers = async () => {
+      try {
+        const userData = await fetcher("/users");
+        setAllUsers(userData);
+      } catch (err) {
+        console.error("Failed to fetch users:", err);
+      }
+    };
+
     getRooms();
+    getAllUsers();
   }, [navigate]);
 
-  // Effect to manage socket connection and events
+  // Effect to establish and manage the persistent socket connection
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token || !activeRoom) return;
+    if (!token) return;
 
     const socket = io("http://localhost:3000", { auth: { token } });
     socketRef.current = socket;
 
-    // 1. Join the active room once connected
-    socket.emit("join_room", activeRoom.id);
-
-    // 2. Listen for events
+    socket.on("connect", () => console.log("Socket connected!"));
+    socket.on("update_user_list", (users: string[]) => setOnlineUsers(users));
     socket.on("message_history", (history: Message[]) => setMessages(history));
     socket.on("chat_message", (message: Message) => {
       setMessages((prev) => [...prev, message]);
     });
-    socket.on("update_user_list", (users: string[]) => setOnlineUsers(users));
     socket.on("connect_error", (err) => {
       if (err.message.includes("Authentication error")) handleLogout();
     });
@@ -84,7 +99,15 @@ const ChatPage: React.FC = () => {
     return () => {
       socket.disconnect();
     };
-  }, [activeRoom, navigate]); // This effect re-runs when activeRoom changes
+  }, [navigate]);
+
+  // Effect to join a room whenever the activeRoom changes
+  useEffect(() => {
+    if (activeRoom && socketRef.current) {
+      setMessages([]); // Clear messages from the old room for a better UX
+      socketRef.current.emit("join_room", activeRoom.id);
+    }
+  }, [activeRoom]);
 
   // Effect for auto-scrolling
   useEffect(() => {
@@ -169,9 +192,8 @@ const ChatPage: React.FC = () => {
         </footer>
       </main>
 
-      {/* Right User Panel (Placeholder) */}
-      {/* 4. Pass the live onlineUsers state */}
-      <OnlineUserPanel users={onlineUsers} />
+      {/* Pass both all users and the list of online usernames */}
+      <OnlineUserPanel allUsers={allUsers} onlineUsernames={onlineUsers} />
     </div>
   );
 };
