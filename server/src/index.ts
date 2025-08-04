@@ -2,16 +2,27 @@ import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import authRouter from "./auth.router";
+import cors from "cors"; // 1. Import the cors middleware
 
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: "*",
+    origin: "http://localhost:5173", // 2. Make socket.io CORS more specific
     methods: ["GET", "POST"],
   },
 });
 
+// 3. Use the cors middleware for all incoming Express requests
+// This will allow requests from your React app.
+// It's crucial to place this before your routes.
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+  })
+);
+
+// This middleware is for parsing JSON bodies
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
