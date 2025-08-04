@@ -1,6 +1,7 @@
 import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import authRouter from "./auth.router";
 
 const app = express();
 const httpServer = createServer(app);
@@ -11,12 +12,16 @@ const io = new Server(httpServer, {
   },
 });
 
+app.use(express.json());
+
 const PORT = process.env.PORT || 3000;
 const GENERAL_ROOM = "general";
 
 app.get("/", (req, res) => {
   res.send("Server is up and running!");
 });
+
+app.use("/api/auth", authRouter);
 
 io.on("connection", (socket) => {
   console.log(`User connected: ${socket.id}`);
