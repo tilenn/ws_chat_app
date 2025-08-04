@@ -1,27 +1,13 @@
 import { Router } from "express";
-import { authMiddleware, AuthenticatedRequest } from "./auth.middleware";
+import { authMiddleware } from "./auth.middleware"; // Still protected
 import prisma from "./db";
 
 const router = Router();
 
-// This endpoint will fetch all rooms the authenticated user is a member of.
-router.get("/", authMiddleware, async (req: AuthenticatedRequest, res) => {
-  const userId = req.user?.userId;
-
-  if (!userId) {
-    // This case should theoretically not be reached due to the middleware, but it's good practice
-    return res.status(401).json({ message: "Authentication error" });
-  }
-
+// This endpoint now fetches ALL available rooms.
+router.get("/", authMiddleware, async (req, res) => {
   try {
     const rooms = await prisma.room.findMany({
-      where: {
-        members: {
-          some: {
-            id: userId,
-          },
-        },
-      },
       orderBy: {
         name: "asc",
       },

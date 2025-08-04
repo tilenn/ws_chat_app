@@ -5,6 +5,7 @@ import authRouter from "./auth.router";
 import roomRouter from "./room.router"; // 1. Import the new room router
 import cors from "cors";
 import jwt from "jsonwebtoken";
+import prisma from "./db";
 
 const onlineUsers = new Map<string, string>();
 
@@ -67,39 +68,89 @@ io.use((socket: SocketWithAuth, next) => {
   }
 });
 
-io.on("connection", async (socket: SocketWithAuth) => {
+io.on("connection", (socket: SocketWithAuth) => {
   console.log(
     `Authenticated user connected: ${socket.decoded_token?.username} (${socket.id})`
   );
 
-  // Automatically join the user to the "general" room
-  socket.join(GENERAL_ROOM);
-  console.log(
-    `User ${socket.decoded_token?.username} joined room: ${GENERAL_ROOM}`
-  );
-
+  // Add user to online list
   if (socket.decoded_token) {
     onlineUsers.set(socket.id, socket.decoded_token.username);
-    io.to(GENERAL_ROOM).emit("update_user_list", getOnlineUserList());
   }
 
-  // Listen for a message from this user
-  socket.on("chat_message", (msg) => {
-    const username = socket.decoded_token?.username || "Anonymous";
-    const messageWithAuthor = {
-      author: username,
-      content: msg,
-    };
+  // 1. Listen for a request to join a specific room
+  socket.on("join_room", async (roomId: string) => {
+    // Leave all other rooms before joining a new one
+    for (const room of socket.rooms) {
+      if (room !== socket.id) {
+        socket.leave(room);
+      }
+    }
 
-    // Broadcast directly to the only room we have
-    io.to(GENERAL_ROOM).emit("chat_message", messageWithAuthor);
+    // Join the new room
+    socket.join(roomId);
+    console.log(
+      `User ${socket.decoded_token?.username} joined room: ${roomId}`
+    );
+
+    // Broadcast the updated global user list to this room
+    io.to(roomId).emit("update_user_list", getOnlineUserList());
+
+    // Fetch message history for the newly joined room
+    const messageHistory = await prisma.message.findMany({
+      where: { roomId: roomId },
+      orderBy: { createdAt: "asc" },
+      take: 50,
+      include: { author: { select: { username: true } } },
+    });
+
+    const formattedHistory = messageHistory.map((msg) => ({
+      id: msg.id,
+      author: msg.author.username,
+      content: msg.content,
+      createdAt: msg.createdAt,
+    }));
+
+    // Send the history only to the client that just joined
+    socket.emit("message_history", formattedHistory);
   });
 
+  // 2. Update the message handler to be room-specific
+  socket.on(
+    "chat_message",
+    async ({ roomId, content }: { roomId: string; content: string }) => {
+      if (!socket.decoded_token) return;
+
+      const { userId, username } = socket.decoded_token;
+
+      try {
+        const newMessage = await prisma.message.create({
+          data: {
+            content,
+            authorId: userId,
+            roomId: roomId,
+          },
+          include: { author: { select: { username: true } } },
+        });
+
+        // Broadcast the new message to the specific room
+        io.to(roomId).emit("chat_message", {
+          id: newMessage.id,
+          author: newMessage.author.username,
+          content: newMessage.content,
+          createdAt: newMessage.createdAt,
+        });
+      } catch (error) {
+        console.error("Error saving message:", error);
+      }
+    }
+  );
+
   socket.on("disconnect", () => {
-    // Remove user from the list and broadcast the update
     if (socket.decoded_token) {
       onlineUsers.delete(socket.id);
-      io.to(GENERAL_ROOM).emit("update_user_list", getOnlineUserList());
+      // Broadcast the updated user list to all connected clients
+      io.emit("update_user_list", getOnlineUserList());
       console.log(`User ${socket.decoded_token.username} disconnected`);
     }
   });
