@@ -49,7 +49,7 @@ const RoomSidebar: React.FC<RoomSidebarProps> = ({ username }) => {
 
       <footer className="p-4 border-t border-gray-200">
         <div className="flex items-center">
-          <div className="w-12 h-12 rounded bg-indigo-500 flex items-center justify-center text-white font-bold mr-3 shrink-0">
+          <div className="w-12 h-12 rounded-lg bg-indigo-500 flex items-center justify-center text-white font-bold mr-3 shrink-0">
             {username.charAt(0).toUpperCase()}
           </div>
           <span className="font-medium text-gray-900 truncate">{username}</span>

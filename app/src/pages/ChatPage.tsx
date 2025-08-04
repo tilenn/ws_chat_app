@@ -4,6 +4,7 @@ import { io, Socket } from "socket.io-client";
 import { jwtDecode } from "jwt-decode";
 import RoomSidebar from "../components/RoomSidebar";
 import MessageBubble from "../components/MessageBubble"; // We need this now
+import OnlineUserPanel from "../components/OnlineUserPanel";
 
 interface Message {
   id: string;
@@ -114,9 +115,7 @@ const ChatPage: React.FC = () => {
       </main>
 
       {/* Right User Panel (Placeholder) */}
-      <aside className="w-72 bg-gray-50 border-l p-4">
-        {/* ... placeholder content ... */}
-      </aside>
+      <OnlineUserPanel />
     </div>
   );
 };
