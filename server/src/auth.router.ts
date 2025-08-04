@@ -22,11 +22,19 @@ router.post("/register", async (req, res) => {
       return res.status(409).json({ message: "Username already taken" });
     }
 
+    const allRooms = await prisma.room.findMany({
+      select: { id: true },
+    });
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: {
         username,
         password: hashedPassword,
+        // All users are part of the default rooms
+        rooms: {
+          connect: allRooms.map((room) => ({ id: room.id })),
+        },
       },
     });
 

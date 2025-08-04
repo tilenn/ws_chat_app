@@ -2,6 +2,7 @@ import express from "express";
 import { createServer } from "http";
 import { Server, Socket } from "socket.io";
 import authRouter from "./auth.router";
+import roomRouter from "./room.router"; // 1. Import the new room router
 import cors from "cors";
 import jwt from "jsonwebtoken";
 
@@ -45,6 +46,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", authRouter);
+app.use("/api/rooms", roomRouter); // 2. Use the room router for this path
 
 io.use((socket: SocketWithAuth, next) => {
   const token = socket.handshake.auth.token;

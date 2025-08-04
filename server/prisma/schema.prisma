@@ -16,6 +16,7 @@ model User {
   password  String 
   createdAt DateTime  @default(now())
   messages  Message[]
+  rooms     Room[]
 }
 
 model Room {
@@ -23,6 +24,7 @@ model Room {
   name      String    @unique
   createdAt DateTime  @default(now())
   messages  Message[]
+  members   User[]
 }
 
 model Message {
