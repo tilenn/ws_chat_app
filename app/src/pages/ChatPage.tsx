@@ -2,12 +2,14 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 import { jwtDecode } from "jwt-decode";
-import UserList from "../components/UserList";
-import MessageBubble from "../components/MessageBubble";
+import RoomSidebar from "../components/RoomSidebar";
+import MessageBubble from "../components/MessageBubble"; // We need this now
 
 interface Message {
+  id: string;
   author: string;
   content: string;
+  createdAt: string;
 }
 
 interface DecodedToken {
@@ -15,13 +17,15 @@ interface DecodedToken {
 }
 
 const ChatPage: React.FC = () => {
+  // Restore state for messages and the input
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [currentUser, setCurrentUser] = useState<DecodedToken | null>(null);
-  const [onlineUsers, setOnlineUsers] = useState<string[]>([]); // 1. Add state for online users
   const socketRef = useRef<Socket | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null); // Ref for auto-scrolling
   const navigate = useNavigate();
 
+  // Restore the full useEffect for socket logic
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -34,17 +38,10 @@ const ChatPage: React.FC = () => {
     const socket = io("http://localhost:3000", { auth: { token } });
     socketRef.current = socket;
 
-    socket.on("connect", () => console.log("Connected to chat server!"));
-
+    socket.on("message_history", (history: Message[]) => setMessages(history));
     socket.on("chat_message", (message: Message) => {
-      setMessages((prevMessages) => [...prevMessages, message]);
+      setMessages((prev) => [...prev, message]);
     });
-
-    // 2. Listen for the user list update event
-    socket.on("update_user_list", (users: string[]) => {
-      setOnlineUsers(users);
-    });
-
     socket.on("connect_error", (err) => {
       if (err.message.includes("Authentication error")) handleLogout();
     });
@@ -53,6 +50,11 @@ const ChatPage: React.FC = () => {
       socket.disconnect();
     };
   }, [navigate]);
+
+  // Effect for auto-scrolling
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,59 +69,54 @@ const ChatPage: React.FC = () => {
     navigate("/login");
   };
 
-  return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
-      <aside className="w-80">
-        <UserList users={onlineUsers} />
-      </aside>
+  if (!currentUser) return null;
 
-      {/* Main Chat Area */}
-      <div className="flex flex-col flex-1">
-        <header className="flex items-center justify-between p-4 bg-white shadow-md">
-          <h1 className="text-2xl font-bold text-gray-800">
-            The Justice League
-          </h1>
+  return (
+    <div className="flex h-screen bg-white font-sans">
+      <RoomSidebar username={currentUser.username} />
+
+      {/* Middle Chat Panel */}
+      <main className="flex-1 flex flex-col">
+        <header className="flex items-center justify-between p-4 border-b border-gray-200">
+          <h2 className="text-xl font-bold text-gray-900"># General</h2>
           <button
             onClick={handleLogout}
-            className="px-4 py-2 font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
+            className="text-sm font-semibold text-gray-600 hover:text-gray-900"
           >
             Logout
           </button>
         </header>
 
         {/* Message List */}
-        <main className="flex-1 p-6 overflow-y-auto">
-          <div className="space-y-6">
-            {messages.map((msg, index) => (
-              <MessageBubble
-                key={index}
-                message={msg}
-                isOwnMessage={msg.author === currentUser?.username}
-              />
-            ))}
-          </div>
-        </main>
+        <div className="flex-1 p-6 overflow-y-auto space-y-4">
+          {messages.map((msg) => (
+            <MessageBubble
+              key={msg.id}
+              message={msg}
+              isOwnMessage={msg.author === currentUser.username}
+            />
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
 
         {/* Message Input */}
         <footer className="p-4 bg-white border-t border-gray-200">
-          <form onSubmit={handleSendMessage} className="flex items-center">
+          <form onSubmit={handleSendMessage} className="relative">
             <input
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type your message..."
-              className="flex-1 px-4 py-3 bg-gray-100 border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder={`Message #General`}
+              className="w-full px-4 py-3 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
-            <button
-              type="submit"
-              className="ml-4 px-6 py-3 font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              Send
-            </button>
           </form>
         </footer>
-      </div>
+      </main>
+
+      {/* Right User Panel (Placeholder) */}
+      <aside className="w-72 bg-gray-50 border-l p-4">
+        {/* ... placeholder content ... */}
+      </aside>
     </div>
   );
 };

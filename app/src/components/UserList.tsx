@@ -1,29 +1,9 @@
 import React from "react";
+import { getColorForUser } from "../utils/colors";
 
 interface UserListProps {
   users: string[];
 }
-
-const COLORS = [
-  "bg-cyan-500",
-  "bg-green-500",
-  "bg-red-500",
-  "bg-purple-500",
-  "bg-yellow-500",
-  "bg-pink-500",
-  "bg-blue-500",
-  "bg-orange-500",
-];
-
-// This helper function creates a consistent color based on the username,
-// so a user's color doesn't change when others join or leave.
-const getColorForUser = (username: string) => {
-  let hash = 0;
-  for (let i = 0; i < username.length; i++) {
-    hash = username.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return COLORS[Math.abs(hash) % COLORS.length];
-};
 
 const UserList: React.FC<UserListProps> = ({ users }) => {
   return (
