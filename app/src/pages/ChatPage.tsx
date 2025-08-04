@@ -18,6 +18,7 @@ const ChatPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [currentUser, setCurrentUser] = useState<DecodedToken | null>(null);
+  const [onlineUsers, setOnlineUsers] = useState<string[]>([]); // 1. Add state for online users
   const socketRef = useRef<Socket | null>(null);
   const navigate = useNavigate();
 
@@ -34,9 +35,16 @@ const ChatPage: React.FC = () => {
     socketRef.current = socket;
 
     socket.on("connect", () => console.log("Connected to chat server!"));
+
     socket.on("chat_message", (message: Message) => {
       setMessages((prevMessages) => [...prevMessages, message]);
     });
+
+    // 2. Listen for the user list update event
+    socket.on("update_user_list", (users: string[]) => {
+      setOnlineUsers(users);
+    });
+
     socket.on("connect_error", (err) => {
       if (err.message.includes("Authentication error")) handleLogout();
     });
@@ -63,7 +71,7 @@ const ChatPage: React.FC = () => {
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
       <aside className="w-80">
-        <UserList />
+        <UserList users={onlineUsers} />
       </aside>
 
       {/* Main Chat Area */}

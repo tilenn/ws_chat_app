@@ -5,6 +5,12 @@ import authRouter from "./auth.router";
 import cors from "cors";
 import jwt from "jsonwebtoken";
 
+const onlineUsers = new Map<string, string>();
+
+function getOnlineUserList() {
+  return Array.from(onlineUsers.values());
+}
+
 interface DecodedToken {
   userId: string;
   username: string;
@@ -59,7 +65,7 @@ io.use((socket: SocketWithAuth, next) => {
   }
 });
 
-io.on("connection", (socket: SocketWithAuth) => {
+io.on("connection", async (socket: SocketWithAuth) => {
   console.log(
     `Authenticated user connected: ${socket.decoded_token?.username} (${socket.id})`
   );
@@ -69,6 +75,11 @@ io.on("connection", (socket: SocketWithAuth) => {
   console.log(
     `User ${socket.decoded_token?.username} joined room: ${GENERAL_ROOM}`
   );
+
+  if (socket.decoded_token) {
+    onlineUsers.set(socket.id, socket.decoded_token.username);
+    io.to(GENERAL_ROOM).emit("update_user_list", getOnlineUserList());
+  }
 
   // Listen for a message from this user
   socket.on("chat_message", (msg) => {
@@ -83,7 +94,12 @@ io.on("connection", (socket: SocketWithAuth) => {
   });
 
   socket.on("disconnect", () => {
-    console.log(`User ${socket.decoded_token?.username} disconnected`);
+    // Remove user from the list and broadcast the update
+    if (socket.decoded_token) {
+      onlineUsers.delete(socket.id);
+      io.to(GENERAL_ROOM).emit("update_user_list", getOnlineUserList());
+      console.log(`User ${socket.decoded_token.username} disconnected`);
+    }
   });
 });
 
