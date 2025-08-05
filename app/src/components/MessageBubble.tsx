@@ -55,7 +55,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           <span className="text-[10px] text-gray-500">{formattedTime}</span>
         </div>
         <div className="mt-1 px-4 py-2 rounded-lg inline-block bg-gray-200 text-gray-800 max-w-lg">
-          {/* 2. Use break-all here as well for consistency */}
           <p className="break-all">{message.content}</p>
         </div>{" "}
       </div>

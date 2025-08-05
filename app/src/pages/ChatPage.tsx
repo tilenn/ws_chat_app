@@ -13,24 +13,20 @@ interface Message {
   content: string;
   createdAt: string;
 }
-
 interface DecodedToken {
   username: string;
 }
 
-// 1. Add Room interface
 interface Room {
   id: string;
   name: string;
 }
-
 interface User {
   id: string;
   username: string;
 }
 
 const ChatPage: React.FC = () => {
-  // Restore state for messages and the input
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [currentUser, setCurrentUser] = useState<DecodedToken | null>(null);
@@ -64,7 +60,6 @@ const ChatPage: React.FC = () => {
       }
     };
 
-    // Fetch all users
     const getAllUsers = async () => {
       try {
         const userData = await fetcher("/users");
@@ -104,7 +99,7 @@ const ChatPage: React.FC = () => {
   // Effect to join a room whenever the activeRoom changes
   useEffect(() => {
     if (activeRoom && socketRef.current) {
-      setMessages([]); // Clear messages from the old room for a better UX
+      setMessages([]);
       socketRef.current.emit("join_room", activeRoom.id);
     }
   }, [activeRoom]);
@@ -121,7 +116,6 @@ const ChatPage: React.FC = () => {
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (newMessage.trim() && activeRoom && socketRef.current) {
-      // 3. Send message with roomId
       socketRef.current.emit("chat_message", {
         roomId: activeRoom.id,
         content: newMessage,
@@ -149,7 +143,6 @@ const ChatPage: React.FC = () => {
       {/* Middle Chat Panel */}
       <main className="flex-1 flex flex-col">
         <header className="flex items-center justify-between p-4 border-b border-gray-200">
-          {/* 2. Make the header dynamic */}
           <h2 className="text-xl font-bold text-gray-900">
             {activeRoom ? `# ${activeRoom.name}` : "Select a room"}
           </h2>
@@ -192,7 +185,6 @@ const ChatPage: React.FC = () => {
         </footer>
       </main>
 
-      {/* Pass both all users and the list of online usernames */}
       <OnlineUserPanel allUsers={allUsers} onlineUsernames={onlineUsers} />
     </div>
   );

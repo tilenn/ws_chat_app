@@ -4,8 +4,6 @@ import prisma from "./db";
 
 const router = Router();
 
-// This endpoint fetches all users in the system.
-// It's protected, so only logged-in users can see the list.
 router.get("/", authMiddleware, async (req, res) => {
   try {
     const users = await prisma.user.findMany({

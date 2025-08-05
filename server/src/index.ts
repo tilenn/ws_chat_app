@@ -2,8 +2,8 @@ import express from "express";
 import { createServer } from "http";
 import { Server, Socket } from "socket.io";
 import authRouter from "./auth.router";
-import roomRouter from "./room.router"; // 1. Import the new room router
-import userRouter from "./user.router"; // 1. Import the new user router
+import roomRouter from "./room.router";
+import userRouter from "./user.router";
 import cors from "cors";
 import jwt from "jsonwebtoken";
 import prisma from "./db";
@@ -41,15 +41,14 @@ app.use(
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
-const GENERAL_ROOM = "general"; // The only room we are using for now
 
 app.get("/", (req, res) => {
   res.send("Server is up and running!");
 });
 
 app.use("/api/auth", authRouter);
-app.use("/api/rooms", roomRouter); // 2. Use the room router for this path
-app.use("/api/users", userRouter); // 2. Use the user router
+app.use("/api/rooms", roomRouter);
+app.use("/api/users", userRouter);
 
 io.use((socket: SocketWithAuth, next) => {
   const token = socket.handshake.auth.token;
@@ -75,14 +74,13 @@ io.on("connection", (socket: SocketWithAuth) => {
     `Authenticated user connected: ${socket.decoded_token?.username} (${socket.id})`
   );
 
-  // Add user to online list
   if (socket.decoded_token) {
     onlineUsers.set(socket.id, socket.decoded_token.username);
-    // 1. Broadcast the updated user list to EVERYONE.
+    // broadcast the updated user list to EVERYONE.
     io.emit("update_user_list", getOnlineUserList());
   }
 
-  // 1. Listen for a request to join a specific room
+  // Listen for a request to join a specific room
   socket.on("join_room", async (roomId: string) => {
     // Leave all other rooms before joining a new one
     for (const room of socket.rooms) {
@@ -119,13 +117,12 @@ io.on("connection", (socket: SocketWithAuth) => {
     socket.emit("message_history", formattedHistory);
   });
 
-  // 2. Update the message handler to be room-specific
   socket.on(
     "chat_message",
     async ({ roomId, content }: { roomId: string; content: string }) => {
       if (!socket.decoded_token) return;
 
-      const { userId, username } = socket.decoded_token;
+      const { userId } = socket.decoded_token;
 
       try {
         const newMessage = await prisma.message.create({
@@ -137,7 +134,6 @@ io.on("connection", (socket: SocketWithAuth) => {
           include: { author: { select: { username: true } } },
         });
 
-        // Broadcast the new message to the specific room
         io.to(roomId).emit("chat_message", {
           id: newMessage.id,
           author: newMessage.author.username,
@@ -153,7 +149,6 @@ io.on("connection", (socket: SocketWithAuth) => {
   socket.on("disconnect", () => {
     if (socket.decoded_token) {
       onlineUsers.delete(socket.id);
-      // This already correctly broadcasts to everyone.
       io.emit("update_user_list", getOnlineUserList());
       console.log(`User ${socket.decoded_token.username} disconnected`);
     }

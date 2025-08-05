@@ -6,7 +6,6 @@ interface DecodedToken {
   username: string;
 }
 
-// Extend the Express Request type to include our user property
 export interface AuthenticatedRequest extends Request {
   user?: DecodedToken;
 }

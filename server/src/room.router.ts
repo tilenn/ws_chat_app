@@ -4,7 +4,6 @@ import prisma from "./db";
 
 const router = Router();
 
-// This endpoint now fetches ALL available rooms.
 router.get("/", authMiddleware, async (req, res) => {
   try {
     const rooms = await prisma.room.findMany({
