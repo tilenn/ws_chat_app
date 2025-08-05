@@ -87,4 +87,8 @@ cd app
 pnpm dev
 ```
 
-> The frontend will be running at `http://localhost:5173`.
+> The frontend will be running at `http://localhost:5173`. (It uses localstorage to store user data so accessing in a new window won't work. Use incognito mode to test it.)
+
+## Screenshot
+
+![Chat Screenshot](public/screenshot.png)
