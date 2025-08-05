@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { Server } from "socket.io"; // 1. Import the Socket.IO Server type
+import { Server } from "socket.io";
 
 interface DecodedToken {
   userId: string;
@@ -10,7 +10,7 @@ interface DecodedToken {
 // Extend the Express Request type to include our custom properties
 export interface AuthenticatedRequest extends Request {
   user?: DecodedToken;
-  io?: Server; // 2. Add the optional io property
+  io?: Server;
 }
 
 export const authMiddleware = (

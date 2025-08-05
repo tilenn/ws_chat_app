@@ -113,7 +113,6 @@ const ChatPage: React.FC = () => {
     }
   }, [activeRoom]);
 
-  // Effect for auto-scrolling
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);

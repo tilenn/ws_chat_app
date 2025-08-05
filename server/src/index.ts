@@ -42,7 +42,6 @@ app.use(
 
 app.use(express.json());
 
-// This middleware attaches the io instance to every request object
 app.use((req: Request, res: Response, next: NextFunction) => {
   (req as AuthenticatedRequest).io = io;
   next();
