@@ -118,6 +118,7 @@ io.on("connection", (socket: SocketWithAuth) => {
       author: msg.author.username,
       content: msg.content,
       createdAt: msg.createdAt,
+      likes: msg.likes,
     }));
 
     // Send the history only to the client that just joined
@@ -152,6 +153,34 @@ io.on("connection", (socket: SocketWithAuth) => {
       }
     }
   );
+
+  socket.on("like_message", async ({ messageId }: { messageId: string }) => {
+    try {
+      const message = await prisma.message.findUnique({
+        where: { id: messageId },
+      });
+
+      if (!message) {
+        return;
+      }
+
+      const updatedMessage = await prisma.message.update({
+        where: { id: messageId },
+        data: { likes: { increment: 1 } },
+        include: { author: { select: { username: true } } },
+      });
+
+      io.to(message.roomId).emit("message_updated", {
+        id: updatedMessage.id,
+        author: updatedMessage.author.username,
+        content: updatedMessage.content,
+        createdAt: updatedMessage.createdAt,
+        likes: updatedMessage.likes,
+      });
+    } catch (error) {
+      console.error("Error liking message:", error);
+    }
+  });
 
   socket.on("disconnect", () => {
     if (socket.decoded_token) {

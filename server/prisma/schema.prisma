@@ -29,11 +29,11 @@ model Message {
   id        String   @id @default(cuid())
   content   String
   createdAt DateTime @default(now())
-  likeCount Int      @default(0)
 
   // Relations
   author    User     @relation(fields: [authorId], references: [id])
   authorId  String
+  likes     Int      @default(0)
 
   room      Room     @relation(fields: [roomId], references: [id])
   roomId    String

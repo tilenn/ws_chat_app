@@ -1,1 +1,32 @@
 @import "tailwindcss";
+
+@layer base {
+  :root {
+    --like-animation-duration: 600ms;
+  }
+}
+
+.like-animation {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2rem;
+  opacity: 0;
+  animation: like-heart-animation var(--like-animation-duration) ease-in-out;
+}
+
+@keyframes like-heart-animation {
+  0% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(0.2);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -60%) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -70%) scale(1);
+  }
+}

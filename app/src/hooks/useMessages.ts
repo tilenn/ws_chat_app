@@ -15,19 +15,27 @@ export const useMessages = (socket: Socket | null, activeRoom: Room | null) => {
     });
 
     socket.on("chat_message", (message: Message) => {
-      // Check if the message is for the active room to avoid displaying messages from other rooms
       setMessages((prev) => [...prev, message]);
+    });
+
+    socket.on("message_updated", (updatedMessage: Message) => {
+      setMessages((prevMessages) =>
+        prevMessages.map((msg) =>
+          msg.id === updatedMessage.id ? updatedMessage : msg
+        )
+      );
     });
 
     return () => {
       socket.off("message_history");
       socket.off("chat_message");
+      socket.off("message_updated");
     };
   }, [socket]);
 
   useEffect(() => {
     if (socket && activeRoom) {
-      setMessages([]); // Clear messages when room changes
+      setMessages([]);
       socket.emit("join_room", activeRoom.id);
     }
   }, [activeRoom, socket]);
@@ -47,5 +55,18 @@ export const useMessages = (socket: Socket | null, activeRoom: Room | null) => {
     }
   };
 
-  return { messages, newMessage, setNewMessage, sendMessage, messagesEndRef };
+  const likeMessage = (messageId: string) => {
+    if (socket) {
+      socket.emit("like_message", { messageId });
+    }
+  };
+
+  return {
+    messages,
+    newMessage,
+    setNewMessage,
+    sendMessage,
+    likeMessage,
+    messagesEndRef,
+  };
 };

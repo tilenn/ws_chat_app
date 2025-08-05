@@ -13,8 +13,14 @@ const ChatPage: React.FC = () => {
   const socket = useSocket();
   const { rooms, activeRoom, setActiveRoom } = useRooms();
   const { allUsers, onlineUsers } = useUsers(socket);
-  const { messages, newMessage, setNewMessage, sendMessage, messagesEndRef } =
-    useMessages(socket, activeRoom);
+  const {
+    messages,
+    newMessage,
+    setNewMessage,
+    sendMessage,
+    likeMessage,
+    messagesEndRef,
+  } = useMessages(socket, activeRoom);
 
   if (!currentUser) return null;
 
@@ -46,6 +52,7 @@ const ChatPage: React.FC = () => {
               key={msg.id}
               message={msg}
               isOwnMessage={msg.author === currentUser.username}
+              onLike={likeMessage}
             />
           ))}
           <div ref={messagesEndRef} />

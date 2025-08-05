@@ -3,6 +3,7 @@ export interface Message {
   author: string;
   content: string;
   createdAt: string;
+  likes: number;
 }
 
 export interface Room {
