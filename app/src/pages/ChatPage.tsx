@@ -91,6 +91,15 @@ const ChatPage: React.FC = () => {
       if (err.message.includes("Authentication error")) handleLogout();
     });
 
+    // Listen for new user registrations
+    socket.on("user_registered", (newUser: User) => {
+      setAllUsers((prevUsers) =>
+        [...prevUsers, newUser].sort((a, b) =>
+          a.username.localeCompare(b.username)
+        )
+      );
+    });
+
     return () => {
       socket.disconnect();
     };

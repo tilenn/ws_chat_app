@@ -2,6 +2,7 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import prisma from "./db";
+import { AuthenticatedRequest } from "./auth.middleware";
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || "your_default_secret";
@@ -9,6 +10,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "your_default_secret";
 // POST /api/auth/register
 router.post("/register", async (req, res) => {
   const { username, password } = req.body;
+  const io = (req as AuthenticatedRequest).io; // Get the io instance from the request
 
   if (!username || !password) {
     return res
@@ -28,7 +30,11 @@ router.post("/register", async (req, res) => {
         username,
         password: hashedPassword,
       },
+      select: { id: true, username: true }, // Select only the data we need to broadcast
     });
+
+    // Broadcast the new user to all connected clients
+    io?.emit("user_registered", user);
 
     res
       .status(201)

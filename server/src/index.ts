@@ -7,6 +7,8 @@ import userRouter from "./user.router";
 import cors from "cors";
 import jwt from "jsonwebtoken";
 import prisma from "./db";
+import { AuthenticatedRequest } from "./auth.middleware";
+import { Request, Response, NextFunction } from "express";
 
 const onlineUsers = new Map<string, string>();
 
@@ -39,6 +41,12 @@ app.use(
 );
 
 app.use(express.json());
+
+// This middleware attaches the io instance to every request object
+app.use((req: Request, res: Response, next: NextFunction) => {
+  (req as AuthenticatedRequest).io = io;
+  next();
+});
 
 const PORT = process.env.PORT || 3000;
 
