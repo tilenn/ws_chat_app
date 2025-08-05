@@ -7,7 +7,6 @@ export const useSocket = () => {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
-      // Or handle this case appropriately
       return;
     }
 
@@ -24,7 +23,6 @@ export const useSocket = () => {
     socket.on("connect_error", (err) => {
       console.error("Socket connection error:", err);
       if (err.message.includes("Authentication error")) {
-        // This might be better handled by a dedicated auth hook or context
         localStorage.removeItem("token");
         window.location.href = "/login";
       }
