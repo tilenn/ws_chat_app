@@ -56,9 +56,15 @@ pnpm install -r
     ```
 
 2.  **Run the database migrations to set up the schema:**
+
     ```bash
     cd server
     pnpm prisma migrate dev
+    ```
+
+3.  **Seed the database with initial data (e.g., chat rooms):**
+    ```bash
+    pnpm prisma db seed
     ```
 
 ### 5. Run the Application
