@@ -1,0 +1,65 @@
+import React from "react";
+
+interface Room {
+  id: string;
+  name: string;
+}
+
+interface RoomSidebarProps {
+  username: string;
+  rooms: Room[];
+  activeRoomId?: string;
+  onRoomSelect: (room: Room) => void;
+}
+
+const RoomSidebar: React.FC<RoomSidebarProps> = ({
+  username,
+  rooms,
+  activeRoomId,
+  onRoomSelect,
+}) => {
+  return (
+    <aside className="flex flex-col h-full w-72 bg-gray-50 text-gray-800 shrink-0 border-r border-gray-200">
+      <header className="p-4 border-b border-gray-200">
+        <h1 className="text-lg font-bold text-gray-900">ChatRooms</h1>
+      </header>
+
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+        <div>
+          <h2 className="text-xs font-bold uppercase text-gray-500 mb-2 px-2">
+            My Chatrooms
+          </h2>
+          <ul>
+            {rooms.map((room) => (
+              <li key={room.id}>
+                {/* Use a button for better accessibility and event handling */}
+                <button
+                  onClick={() => onRoomSelect(room)}
+                  className={`w-full flex items-center p-2 rounded-md font-medium text-left ${
+                    room.id === activeRoomId
+                      ? "bg-gray-200 text-gray-900"
+                      : "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
+                  }`}
+                >
+                  <span className="mr-2 text-gray-400">#</span>
+                  {room.name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </nav>
+
+      <footer className="p-4 border-t border-gray-200">
+        <div className="flex items-center">
+          <div className="w-12 h-12 rounded-lg bg-indigo-500 flex items-center justify-center text-white font-bold mr-3 shrink-0">
+            {username.charAt(0).toUpperCase()}
+          </div>
+          <span className="font-medium text-gray-900 truncate">{username}</span>
+        </div>
+      </footer>
+    </aside>
+  );
+};
+
+export default RoomSidebar;
