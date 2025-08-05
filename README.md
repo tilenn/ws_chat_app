@@ -21,15 +21,15 @@ cd ws_chat_app
 
 ### 2. Configure Environment Variables
 
-The server requires a `.env` file for the database connection and JWT secret.
+The server requires a `.env` file for the database connection and JWT secret. You can copy the example file to get started.
 
-1.  **Create the `.env` file:**
+1.  **Copy the example environment file:**
 
     ```bash
-    touch server/.env
+    cp server/.env.example server/.env
     ```
 
-2.  **Add the following content to `server/.env`:**
+2.  **Update the variables in `server/.env`:**
     _Note: The credentials must match your database setup (either in `docker-compose.yml` or your local instance)._
     ```env
     # server/.env
